@@ -9,7 +9,14 @@ from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 
 # required logging for apscheduler errors, need to make fancier
 import logging
-logging.basicConfig()
+
+# This needs a refactor
+log = logging.getLogger('apscheduler.executors.default')
+log.setLevel(logging.INFO)
+fmt = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+h = logging.StreamHandler()
+h.setFormatter(fmt)
+log.addHandler(h)
 
 import requests
 
@@ -25,10 +32,6 @@ job_defaults = {
     'coalesce': False,
     'max_instances': 3
 }
-
-# configure scheduler object, then let it rip
-scheduler = BackgroundScheduler(jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc)
-scheduler.start()
 
 # configure reqparse for flask, filter wanted variables
 parser = reqparse.RequestParser()
@@ -58,6 +61,7 @@ class Job(Resource):
 class JobList(Resource):
     # get list of jobs
     def get(self):
+        logging.warning('Sent list of jobs at %s', datetime.utcnow())
         return [unpackjob(job) for job in scheduler.get_jobs()]
 
     # add a new job to the list
@@ -72,12 +76,12 @@ class JobList(Resource):
 
 class Test(Resource):
     def get(self):
-        print "response received", datetime.utcnow()
+        logging.warning('Response received at %s', datetime.utcnow())
         return 200
 
 def curl(url, data):
     response = requests.get(url, data=data)
-    print url, response, datetime.utcnow()
+    logging.warning('%s sent to %s at %s', url, response, datetime.utcnow())
 
 # let flask rip
 app = Flask(__name__)
@@ -89,4 +93,6 @@ api.add_resource(Job, '/jobs/<job_id>')
 api.add_resource(Test, '/test')
 
 if __name__ == '__main__':
+    scheduler = BackgroundScheduler(jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc)
+    scheduler.start()
     app.run(debug=True)
