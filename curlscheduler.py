@@ -33,6 +33,9 @@ job_defaults = {
     'max_instances': 3
 }
 
+scheduler = BackgroundScheduler(jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc)
+scheduler.start()
+
 # configure reqparse for flask, filter wanted variables
 parser = reqparse.RequestParser()
 parser.add_argument('url')
@@ -93,6 +96,4 @@ api.add_resource(Job, '/jobs/<job_id>')
 api.add_resource(Test, '/test')
 
 if __name__ == '__main__':
-    scheduler = BackgroundScheduler(jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone=utc)
-    scheduler.start()
     app.run(debug=True)
